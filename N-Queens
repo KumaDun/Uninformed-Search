@@ -1,0 +1,48 @@
+def num_placements_all(n):
+    return math.factorial(n * n) / \
+        (math.factorial(n * (n - 1)) * math.factorial(n))
+
+
+def num_placements_one_per_row(n):
+    return n * n
+
+
+def n_queens_valid(board):
+    for i in range(len(board)):
+        for j in range(i):
+            if abs(board[i] - board[j]) == (i - j) or board[i] == board[j]:
+                return False
+    return True
+
+
+def n_queens_next_position(n, board):
+    length = len(board)
+    # harmful_nums = []
+    if length == n:
+        return
+    harmful_nums = board + (
+        [harmful_num for num_tuple in [(v + length - i, v - \
+            length + i) for i, v in enumerate(board)] for \
+                harmful_num in
+         num_tuple if 0 <= harmful_num < n])
+    for next_position in range(n):
+        if next_position not in harmful_nums:
+            yield next_position
+
+
+def n_queens_helper(n, board):
+    if len(board) == n:
+        yield board
+    for possible_position in n_queens_next_position(n, board):
+        new_board = board + [possible_position]
+        for valid_board in n_queens_helper(n, new_board):
+            yield valid_board
+
+
+def n_queens_solutions(n):
+    initial_state = []
+    result = []
+    for valid_board in \
+        n_queens_helper(n, initial_state):
+        result.append(valid_board)
+    return result
