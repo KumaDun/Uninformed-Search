@@ -1,0 +1,103 @@
+class LightsOutPuzzle(object):
+
+    def __init__(self, board):
+        self.light_board = copy.deepcopy(board)
+        self.rows_num = len(self.light_board)
+        self.cols_num = len(self.light_board[0])
+
+    def get_board(self):
+        return self.light_board
+
+    def perform_move(self, row, col):
+        if row < self.rows_num and col < self.cols_num:
+            self.light_board[row][col] = not self.light_board[row][col]
+            # Up
+            if row - 1 >= 0:
+                self.light_board[row - 1][col] = not self.light_board[row - 1][col]
+            # Down
+            if row + 1 < self.rows_num:
+                self.light_board[row + 1][col] = not self.light_board[row + 1][col]
+            # Left
+            if col - 1 >= 0:
+                self.light_board[row][col - 1] = not self.light_board[row][col - 1]
+            # Right
+            if col + 1 < self.cols_num:
+                self.light_board[row][col + 1] = not self.light_board[row][col + 1]
+
+    def scramble(self):
+        scramble_board = [[random.random() < 0.5 for _ in range(self.cols_num)] for _ in range(self.rows_num)]
+        for i in range(self.rows_num):
+            for j in range(self.cols_num):
+                if scramble_board[i][j]:
+                    self.perform_move(i, j)
+        # [ self.perform_move(i,j) for i in range(self.cols_num) for j in range(self.cols_num) if scramble_board[i][j] ]
+
+    def is_solved(self):
+        solved_board = [[False for _ in range(self.cols_num)] for _ in range(self.rows_num)]
+        if self.light_board == solved_board:
+            return True
+        return False
+
+    def copy(self):
+        copied_board = copy.deepcopy(self.light_board)
+        return LightsOutPuzzle(copied_board)
+
+    def successors(self):
+        original_board = copy.deepcopy(self.light_board)
+        for i in range(self.rows_num):
+            for j in range(self.cols_num):
+                self.perform_move(i, j)
+                new_board = copy.deepcopy(self.light_board)
+                self.light_board = copy.deepcopy(original_board)
+                # print('successor original board is')
+                # print(self.light_board)
+                new_tuple_b = tuple([tuple(_) for _ in new_board])
+                yield tuple([tuple([i,j]),new_tuple_b])
+                
+    def find_solution(self):
+        visited = set()
+        frontier = deque()
+        frontier.appendleft(self.tuple_b())
+        path = {self.tuple_b(): []}
+        result = []
+        if self.is_solved():
+            result.append([])
+        while len(frontier) != 0:
+            unvisited_tuple_b = frontier.pop()
+            visited.add(unvisited_tuple_b)
+            unvisited_p = LightsOutPuzzle([list(_) for _ in unvisited_tuple_b])
+            for mov, new_tuple_b in unvisited_p.successors():
+                new_p = LightsOutPuzzle([list(_) for _ in new_tuple_b])
+                if new_p.is_solved():
+                    # print("solved")
+                    one_path = copy.deepcopy(path[unvisited_tuple_b])
+                    one_path.append(mov)
+                    if one_path not in result:
+                        if len(result)>0:
+                            if len(one_path) < len(result[0]):
+                                result.insert(0,one_path)
+                        else:
+                            result.append(one_path)
+                    # No need to add a solved board to path{}, jump for loop
+                    continue
+                if new_tuple_b not in visited and new_tuple_b not in frontier:
+                    frontier.appendleft(new_tuple_b)
+                    path[new_tuple_b]= copy.deepcopy(path[unvisited_tuple_b])
+                    path[new_tuple_b].append(mov)
+                    # print(path[new_p])
+                    # print(new_p.get_board())
+                # else:
+                # print("already in visited")
+
+        if len(result) == 0:
+            return None
+        else:
+            return result[0]
+        
+    def tuple_b(self):
+        return tuple([tuple(row) for row in self.light_board])
+
+
+def create_puzzle(rows, cols):
+    puzzle_board = [[False for _ in range(cols)] for _ in range(rows)]
+    return LightsOutPuzzle(puzzle_board)
