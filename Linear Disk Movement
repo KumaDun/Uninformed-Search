@@ -1,0 +1,156 @@
+class IdenticalLinearDisk(object):
+
+    def __init__(self, line, length, n):
+        self.moves = []
+        self.line = line.copy()
+        self.length = length
+        self.n = n
+
+    def __eq__(self, other):
+        if isinstance(other, IdenticalLinearDisk):
+            return self.get_line() == other.get_line()
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash(tuple(self.get_line()))
+
+    def get_line(self):
+        return self.line
+
+    def is_solved(self):
+        if len(self.line) != self.length:
+            return False
+        if self.line[:self.length - self.n] != [-1 for _ in range(self.length - self.n)]:
+            return False
+        for num in self.line[self.length - self.n:]:
+            if num < 0:
+                return False
+        return True
+
+    def successors(self):
+        successors = {}
+        for i in range(len(self.line)):
+            if is_valid_move(self.line, i, i + 1):
+                new_l = self.line.copy()
+                new_l[i + 1] = new_l[i]
+                new_l[i] = -1
+                new_linear = IdenticalLinearDisk(new_l, self.length, self.n)
+                successors[(i, i + 1)] = new_linear
+            if is_valid_move(self.line, i, i + 2):
+                new_l = self.line.copy()
+                new_l[i + 2] = new_l[i]
+                new_l[i] = -1
+                new_linear = IdenticalLinearDisk(new_l, self.length, self.n)
+                successors[(i, i + 2)] = new_linear
+            if is_valid_move(self.line, i, i - 1):
+                new_l = self.line.copy()
+                new_l[i - 1] = new_l[i]
+                new_l[i] = -1
+                new_linear = IdenticalLinearDisk(new_l, self.length, self.n)
+                successors[(i, i - 1)] = new_linear
+            if is_valid_move(self.line, i, i - 2):
+                new_l = self.line.copy()
+                new_l[i - 2] = new_l[i]
+                new_l[i] = -1
+                new_linear = IdenticalLinearDisk(new_l, self.length, self.n)
+                successors[(i, i - 1)] = new_linear
+        return successors.items()
+
+    def find_solutions(self):
+        frontier = Queue()
+        frontier.put(self)
+        visited = set()
+        path = {self: []}
+
+        if self.is_solved():
+            yield []
+
+        while not frontier.empty():
+            # print("Enter the find loop")
+            unvisited_disk = frontier.get()
+            for mov, new_disk in unvisited_disk.successors():
+                if new_disk.is_solved():
+                    # print("Solved")
+                    one_path = copy.deepcopy(path[unvisited_disk])
+                    one_path.append(mov)
+                    # print(one_path)
+                    yield one_path
+                if new_disk not in visited:
+                    frontier.put(new_disk)
+                    path[new_disk] = copy.deepcopy(path[unvisited_disk])
+                    path[new_disk].append(mov)
+                    # print(path[new_disk])
+                    # print(new_disk.get_line())
+    
+
+class DistinctLinearDisk(IdenticalLinearDisk):
+
+    def is_solved(self):
+        if len(self.line) != self.length:
+            return False
+        if self.line[:self.length - self.n] != [-1 for _ in range(self.length - self.n)]:
+            return False
+        if self.line[:self.length - self.n - 1:-1] != [i for i in range(self.n)]:
+            return False
+        return True
+
+    def successors(self):
+        successors = {}
+        for i in range(len(self.line)):
+            if is_valid_move(self.line, i, i + 1):
+                new_l = self.line.copy()
+                new_l[i + 1] = new_l[i]
+                new_l[i] = -1
+                new_linear = DistinctLinearDisk(new_l, self.length, self.n)
+                successors[(i, i + 1)] = new_linear
+            if is_valid_move(self.line, i, i + 2):
+                new_l = self.line.copy()
+                new_l[i + 2] = new_l[i]
+                new_l[i] = -1
+                new_linear = DistinctLinearDisk(new_l, self.length, self.n)
+                successors[(i, i + 2)] = new_linear
+            if is_valid_move(self.line, i, i - 1):
+                new_l = self.line.copy()
+                new_l[i - 1] = new_l[i]
+                new_l[i] = -1
+                new_linear = DistinctLinearDisk(new_l, self.length, self.n)
+                successors[(i, i - 1)] = new_linear
+            if is_valid_move(self.line, i, i - 2):
+                new_l = self.line.copy()
+                new_l[i - 2] = new_l[i]
+                new_l[i] = -1
+                new_linear = DistinctLinearDisk(new_l, self.length, self.n)
+                successors[(i, i - 2)] = new_linear
+        return successors.items()
+
+
+def is_valid_move(line, since, to):
+    if to >= len(line) or to < 0 or since < 0 or since >= len(line):
+        return False
+    if abs(to - since) == 1 and line[since] >= 0 and line[to] == -1:
+        return True
+    if abs(to - since) == 2 and line[since] >= 0 and line[to] == -1 and line[int((to + since) / 2)] >= 0:
+        return True
+
+
+def create_linear_disk(length, n):
+    line = [i for i in range(n)] + [-1 for _ in range(length - n)]
+    return IdenticalLinearDisk(line, length, n)
+
+
+def create_distinct_linear_disk(length, n):
+    line = [i for i in range(n)] + [-1 for _ in range(length - n)]
+    return DistinctLinearDisk(line, length, n)
+
+
+def solve_identical_disks(length, n):
+    linear_disk = create_linear_disk(length, n)
+    solution = next(linear_disk.find_solutions())
+    return solution
+
+
+def solve_distinct_disks(length, n):
+    linear_disk = create_distinct_linear_disk(length, n)
+    solution = next(linear_disk.find_solutions())
+    return solution
